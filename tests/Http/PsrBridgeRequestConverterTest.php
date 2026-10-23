@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Http;
 
+use Composer\Autoload\ClassLoader;
 use EzPhp\Http\Request;
 use EzPhp\Http\UploadedFile;
 use EzPhp\PsrBridge\BridgeException;
@@ -11,6 +12,7 @@ use EzPhp\PsrBridge\Http\RequestConverter;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
+use ReflectionClass;
 use Tests\Support\PsrBridgeForeignRequest;
 use Tests\TestCase;
 
@@ -146,6 +148,28 @@ final class PsrBridgeRequestConverterTest extends TestCase
         $this->assertSame('on disk', file_get_contents($files['disk']->tmpName()));
         $this->assertSame('', $files['failed']->tmpName());
         $this->assertSame(UPLOAD_ERR_PARTIAL, $files['failed']->error());
+    }
+
+    public function testInMemoryUploadCopyIsRemovedWhenTheProcessExits(): void
+    {
+        // A shutdown hook only fires when the process ends, so convert in a child process.
+        $loader = (string) (new ReflectionClass(ClassLoader::class))->getFileName();
+        $code = sprintf(
+            'require %s; $f = new \\Nyholm\\Psr7\\Factory\\Psr17Factory();'
+            . ' $c = new \\EzPhp\\PsrBridge\\Http\\RequestConverter($f, $f, $f);'
+            . ' $r = $c->fromPsr($f->createServerRequest(\'POST\', \'/\')->withUploadedFiles(['
+            . ' \'a\' => $f->createUploadedFile($f->createStream(\'bytes\'), 5, UPLOAD_ERR_OK, \'a.txt\')]));'
+            . ' $p = $r->files()[\'a\']->tmpName(); echo $p, "\\n", is_file($p) ? \'exists\' : \'missing\';',
+            var_export(dirname($loader, 2) . '/autoload.php', true),
+        );
+        $output = [];
+        exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code), $output, $status);
+
+        $this->assertSame(0, $status, implode("\n", $output));
+        [$path, $state] = $output + ['', ''];
+        $this->tempFiles[] = $path;
+        $this->assertSame('exists', $state); // usable while the process runs
+        $this->assertFileDoesNotExist($path); // gone once it exits
     }
 
     public function testFromPsrHandlesObjectBodyAndEmptyPath(): void

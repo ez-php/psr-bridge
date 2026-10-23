@@ -289,7 +289,7 @@ src/
 
 tests/
 ├── TestCase.php                                 — Base PHPUnit test case (identical in every package)
-├── Http/PsrBridgeRequestConverterTest.php       — both directions, uploads (on disk / in memory / failed / nested), URI building, round trip
+├── Http/PsrBridgeRequestConverterTest.php       — both directions, uploads (on disk / in memory / failed / nested), temp-copy cleanup at process exit, URI building, round trip
 ├── Http/PsrBridgeResponseConverterTest.php      — headers, cookies, buffered streams, SSE rejection, consumed PSR streams, cookie round trip
 ├── Http/PsrBridgeSetCookieParserTest.php        — attributes, Expires → TTL, invalid values
 ├── Http/PsrBridgeMiddlewareTest.php             — PSR-15 middleware in ez pipeline and vice versa
@@ -327,8 +327,13 @@ tests/
   back into cookies (URL-decoded, Max-Age/Expires → TTL, `Max-Age=0` → delete). A cookie ez-php
   rejects (e.g. `SameSite=None` without `Secure`) becomes a `BridgeException`.
 - **Uploaded files are path-based in ez-php.** PSR uploads without a local file behind their stream
-  are copied to a temp file (not deleted automatically — like PHP's own uploads, they live in the
-  temp dir); nested upload arrays are skipped because ez-php's files are flat.
+  are copied to a temp file that a shutdown hook deletes when the PHP process exits — under PHP-FPM/CLI
+  that is the end of the request, the lifetime PHP gives its own uploads; `moveTo()` renames the file away
+  first, so a moved upload is kept. Long-running workers (RoadRunner, Swoole, FrankenPHP worker mode) keep
+  the copy until the worker exits and must unlink `tmpName()` after each request; the converter is
+  `readonly`, so it does not track copies itself. A temp file that
+  cannot be created or written throws `BridgeException`. Nested upload arrays are skipped because
+  ez-php's files are flat.
 - **Logging is a soft dependency.** `ez-php/logging` and `psr/log` are `suggest` + `require-dev`;
   the `Log\` classes load only when used, so HTTP-only users don't pull them in.
 - **Level mapping:** PSR-3 `emergency`/`alert` → ez `critical`, `notice` → `info`; the other way is

@@ -11,6 +11,7 @@ use EzPhp\PsrBridge\BridgeException;
 use Psr\Http\Message\ServerRequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -195,13 +196,7 @@ final readonly class RequestConverter
             if (is_string($uri) && is_file($uri)) {
                 $path = $uri;
             } else {
-                $path = (string) tempnam(sys_get_temp_dir(), 'ezpsr');
-
-                if ($stream->isSeekable()) {
-                    $stream->rewind();
-                }
-
-                file_put_contents($path, $stream->getContents());
+                $path = $this->copyToTempFile($stream);
             }
         }
 
@@ -212,6 +207,42 @@ final readonly class RequestConverter
             $path,
             $file->getError(),
         );
+    }
+
+    /**
+     * Copy an in-memory upload to a temp file that is removed when the PHP process exits.
+     *
+     * ez-php's UploadedFile is path-based, so a stream without a local file needs one.
+     * Under PHP-FPM/CLI the process ends with the request, matching how PHP deletes its
+     * own uploads; moveTo() renames the file away first, so a moved upload is kept.
+     * Long-running workers (RoadRunner, Swoole, FrankenPHP worker mode) keep the copy
+     * until the worker exits and must unlink tmpName() after handling the request.
+     *
+     * @throws BridgeException When no temp file can be created or written.
+     */
+    private function copyToTempFile(StreamInterface $stream): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'ezpsr');
+
+        if ($path === false) {
+            throw new BridgeException('Cannot create a temp file for an in-memory upload.');
+        }
+
+        register_shutdown_function(static function () use ($path): void {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        });
+
+        if ($stream->isSeekable()) {
+            $stream->rewind();
+        }
+
+        if (file_put_contents($path, $stream->getContents()) === false) {
+            throw new BridgeException(sprintf('Cannot write the in-memory upload to %s.', $path));
+        }
+
+        return $path;
     }
 
     /**
