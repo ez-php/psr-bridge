@@ -1,0 +1,58 @@
+{
+  "name": "ez-php/psr-bridge",
+  "version": "2.5.10",
+  "description": "Adapters between ez-php HTTP/logging types and PSR-7, PSR-15, PSR-17 and PSR-3",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Andreas Uretschnig",
+      "email": "andreas.uretschnig@gmail.com"
+    }
+  ],
+  "keywords": ["psr-7", "psr-15", "psr-17", "psr-3", "interop", "php", "ez-php"],
+  "homepage": "https://github.com/ez-php/psr-bridge",
+  "support": {
+    "issues": "https://github.com/ez-php/psr-bridge/issues",
+    "source": "https://github.com/ez-php/psr-bridge"
+  },
+  "require": {
+    "php": "^8.5",
+    "ez-php/contracts": "^2.0",
+    "ez-php/http": "^2.0",
+    "psr/http-factory": "^1.1",
+    "psr/http-message": "^2.0",
+    "psr/http-server-middleware": "^1.0"
+  },
+  "suggest": {
+    "ez-php/logging": "Needed for Log\\PsrLogger / Log\\EzLogger (PSR-3 adapters)",
+    "psr/log": "Needed for Log\\PsrLogger / Log\\EzLogger (PSR-3 adapters)"
+  },
+  "require-dev": {
+    "ez-php/docker": "^2.0",
+    "ez-php/logging": "^2.0",
+    "nyholm/psr7": "^1.8",
+    "psr/log": "^3.0",
+    "phpunit/phpunit": "^13.0",
+    "phpstan/phpstan": "^2.1",
+    "friendsofphp/php-cs-fixer": "^3.94",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "phpstan/phpstan-deprecation-rules": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "EzPhp\\PsrBridge\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "cs": "php-cs-fixer fix",
+    "analyse": "phpstan analyse",
+    "test": "phpunit",
+    "full": "composer analyse && composer cs && composer test"
+  }
+}
