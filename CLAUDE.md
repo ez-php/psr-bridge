@@ -318,7 +318,7 @@ tests/
 - **Needs ez-php/http's bulk accessors.** Converting a request as a whole requires all headers,
   query/body/cookie/server params, route params and files; `Request` gained read-only
   `headers()`/`queryParams()`/`bodyParams()`/`cookies()`/`serverParams()`/`params()`/`files()` and
-  `UploadedFile::tmpName()` for this. `RequestInterface` was left unchanged, so the converter accepts
+  `UploadedFile::tmpName()` for this (first released in 2.6.0, hence `ez-php/http: ^2.6`). `RequestInterface` was left unchanged, so the converter accepts
   only the concrete `Request` and throws `BridgeException` for other implementations.
 - **Responses are buffered; SSE is rejected.** PSR-7 bodies are streams of known content here, so
   `writeBody()` is collected into a string — fine for `StreamedResponse::download()`. A

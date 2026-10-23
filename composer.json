@@ -1,6 +1,6 @@
 {
   "name": "ez-php/psr-bridge",
-  "version": "2.5.10",
+  "version": "2.6.0",
   "description": "Adapters between ez-php HTTP/logging types and PSR-7, PSR-15, PSR-17 and PSR-3",
   "type": "library",
   "license": "MIT",
@@ -19,7 +19,7 @@
   "require": {
     "php": "^8.5",
     "ez-php/contracts": "^2.0",
-    "ez-php/http": "^2.0",
+    "ez-php/http": "^2.6",
     "psr/http-factory": "^1.1",
     "psr/http-message": "^2.0",
     "psr/http-server-middleware": "^1.0"
