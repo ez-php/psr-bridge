@@ -328,8 +328,10 @@ tests/
   rejects (e.g. `SameSite=None` without `Secure`) becomes a `BridgeException`.
 - **Uploaded files are path-based in ez-php.** PSR uploads without a local file behind their stream
   are copied to a temp file that a shutdown hook deletes when the PHP process exits — under PHP-FPM/CLI
-  that is the end of the request, the lifetime PHP gives its own uploads; `moveTo()` renames the file away
-  first, so a moved upload is kept. Long-running workers (RoadRunner, Swoole, FrankenPHP worker mode) keep
+  that is the end of the request, the lifetime PHP gives its own uploads. Every bridged upload (copy or
+  the PSR stream's own file) is built with `UploadedFile::fromLocalFile()`, because `move_uploaded_file()`
+  refuses files PHP's SAPI did not receive; its `moveTo()` uses `rename()`, so a moved upload is kept
+  (and `StorageInterface::putUploadedFile()` works). Long-running workers (RoadRunner, Swoole, FrankenPHP worker mode) keep
   the copy until the worker exits and must unlink `tmpName()` after each request; the converter is
   `readonly`, so it does not track copies itself. A temp file that
   cannot be created or written throws `BridgeException`. Nested upload arrays are skipped because

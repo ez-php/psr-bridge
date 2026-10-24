@@ -200,7 +200,7 @@ final readonly class RequestConverter
             }
         }
 
-        return new UploadedFile(
+        return UploadedFile::fromLocalFile(
             $file->getClientFilename() ?? '',
             $file->getClientMediaType() ?? '',
             $file->getSize() ?? 0,
@@ -214,7 +214,8 @@ final readonly class RequestConverter
      *
      * ez-php's UploadedFile is path-based, so a stream without a local file needs one.
      * Under PHP-FPM/CLI the process ends with the request, matching how PHP deletes its
-     * own uploads; moveTo() renames the file away first, so a moved upload is kept.
+     * own uploads; the file is created via UploadedFile::fromLocalFile(), whose moveTo()
+     * renames it away first, so a moved upload is kept.
      * Long-running workers (RoadRunner, Swoole, FrankenPHP worker mode) keep the copy
      * until the worker exits and must unlink tmpName() after handling the request.
      *

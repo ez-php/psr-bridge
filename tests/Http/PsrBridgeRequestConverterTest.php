@@ -150,6 +150,31 @@ final class PsrBridgeRequestConverterTest extends TestCase
         $this->assertSame(UPLOAD_ERR_PARTIAL, $files['failed']->error());
     }
 
+    public function testBridgedUploadsCanBeMoved(): void
+    {
+        $diskSource = $this->tempFile('on disk');
+        $psr = $this->factory->createServerRequest('POST', '/')->withUploadedFiles([
+            'memory' => $this->factory->createUploadedFile($this->factory->createStream('in memory'), 9, UPLOAD_ERR_OK, 'm.txt'),
+            'disk' => $this->factory->createUploadedFile($this->factory->createStreamFromFile($diskSource), 7, UPLOAD_ERR_OK, 'd.txt'),
+        ]);
+
+        $files = $this->converter->fromPsr($psr)->files();
+        $memorySource = $files['memory']->tmpName();
+        $this->tempFiles[] = $memorySource;
+
+        foreach (['memory' => 'in memory', 'disk' => 'on disk'] as $key => $contents) {
+            $destination = sys_get_temp_dir() . '/ezpsrmoved_' . $key . '_' . bin2hex(random_bytes(4));
+            $this->tempFiles[] = $destination;
+
+            $files[$key]->moveTo($destination);
+
+            $this->assertSame($contents, file_get_contents($destination));
+        }
+
+        $this->assertFileDoesNotExist($memorySource);
+        $this->assertFileDoesNotExist($diskSource);
+    }
+
     public function testInMemoryUploadCopyIsRemovedWhenTheProcessExits(): void
     {
         // A shutdown hook only fires when the process ends, so convert in a child process.
