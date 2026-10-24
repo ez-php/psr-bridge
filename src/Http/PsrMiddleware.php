@@ -56,6 +56,13 @@ final readonly class PsrMiddleware implements MiddlewareInterface
             ) {
             }
 
+            /**
+             * Convert the PSR request back, run the rest of the ez pipeline, convert its response.
+             *
+             * @param ServerRequestInterface $request
+             *
+             * @return PsrResponseInterface
+             */
             public function handle(ServerRequestInterface $request): PsrResponseInterface
             {
                 return $this->responses->toPsr(($this->next)($this->requests->fromPsr($request)));
