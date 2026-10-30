@@ -121,4 +121,14 @@ final class PsrBridgeForeignRequest implements RequestInterface
     {
         return false;
     }
+
+    public function withAttribute(string $name, mixed $value): static
+    {
+        return $this;
+    }
+
+    public function attribute(string $name, mixed $default = null): mixed
+    {
+        return $default;
+    }
 }
